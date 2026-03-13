@@ -1,0 +1,123 @@
+---
+import { getCollection } from "astro:content";
+import BaseHead from "../../../components/BaseHead.astro";
+import Header from "../../../components/Header.astro";
+import Footer from "../../../components/Footer.astro";
+import FormattedDate from "../../../components/FormattedDate.astro";
+
+export async function getStaticPaths() {
+    const posts = await getCollection("blog");
+    const tags = [
+        ...new Set(
+            posts.flatMap((p) =>
+                Array.isArray((p.data as any).tags) ? (p.data as any).tags : [],
+            ),
+        ),
+    ];
+
+    return tags.map((tag) => ({
+        params: { tag },
+        props: {
+            posts: posts
+                .filter((p) => (p.data as any).tags?.includes(tag))
+                .sort(
+                    (a, b) =>
+                        b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+                ),
+        },
+    }));
+}
+
+const { tag } = Astro.params;
+const { posts } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+    <head>
+        <BaseHead title={`#${tag}`} description={`Posts tagged with ${tag}`} />
+        <style>
+            .page-title {
+                font-size: 1.4em;
+                margin: 0 0 0.3em;
+                border-bottom: 1px solid rgb(var(--gray-light));
+                padding-bottom: 0.4em;
+            }
+            .page-title span {
+                font-size: 0.65em;
+                color: rgb(var(--gray));
+                font-weight: 400;
+            }
+            .back {
+                display: inline-block;
+                font-size: 0.85em;
+                color: rgb(var(--gray));
+                text-decoration: none;
+                margin-bottom: 1.5em;
+            }
+            .back:hover {
+                color: var(--accent);
+            }
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+            }
+            li {
+                border-bottom: 1px solid rgb(var(--gray-light));
+            }
+            li:last-child {
+                border-bottom: none;
+            }
+            li a {
+                display: flex;
+                justify-content: space-between;
+                align-items: baseline;
+                gap: 1em;
+                padding: 0.7em 0;
+                text-decoration: none;
+            }
+            li a:hover .title {
+                color: var(--accent);
+                text-decoration: underline;
+            }
+            .title {
+                font-size: 1em;
+                font-weight: 600;
+                color: rgb(var(--black));
+                margin: 0;
+            }
+            .date {
+                font-size: 0.82em;
+                color: rgb(var(--gray));
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <Header />
+        <main>
+            <a href="/blog/" class="back">← All posts</a>
+            <h1 class="page-title">
+                #{tag}
+                <span>({posts.length} posts)</span>
+            </h1>
+            <ul>
+                {
+                    posts.map((post) => (
+                        <li>
+                            <a href={`/blog/${post.id}/`}>
+                                <h4 class="title">{post.data.title}</h4>
+                                <p class="date">
+                                    <FormattedDate date={post.data.pubDate} />
+                                </p>
+                            </a>
+                        </li>
+                    ))
+                }
+            </ul>
+        </main>
+        <Footer />
+    </body>
+</html>
